@@ -1,4 +1,13 @@
 
+export interface IGitHubRepository {
+  favorite: boolean,
+  name: string,
+  description: string,
+  url: string,
+  stargazers_count: number,
+  languages_url: string,
+}
+
 export interface IGitHubRepoStarSearchResult {
   node: {
     name: string

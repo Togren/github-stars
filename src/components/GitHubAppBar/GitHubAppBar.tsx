@@ -1,5 +1,6 @@
 import { Typography, AppBar, styled, Toolbar } from '@mui/material';
 
+// TODO: Fix linting to accept types
 type GitHubAppBarComponentProps = {
   title: string
 }

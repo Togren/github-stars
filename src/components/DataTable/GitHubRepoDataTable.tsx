@@ -8,20 +8,11 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-material.css';
 import { CellClickedEvent } from 'ag-grid-community';
 import { DateTime } from 'luxon';
-import { IGitHubRepoStarSearchResult, IGitHubSearchResult } from '@/interfaces/github';
+import { IGitHubRepository, IGitHubRepoStarSearchResult, IGitHubSearchResult } from '@/interfaces/github';
 
 type GitHubRepoDataTableProps = {
   url: string,
   token: string,
-}
-
-type GitHubRepository = {
-  favorite: boolean,
-  name: string,
-  description: string,
-  url: string,
-  stargazers_count: number,
-  languages_url: string,
 }
 
 const GitHubRepoDataTable = ( props: GitHubRepoDataTableProps ) => {
@@ -81,67 +72,26 @@ const GitHubRepoDataTable = ( props: GitHubRepoDataTableProps ) => {
   }
 
   /**
-   * Call GitHub GraphQL endpoint to fetch all data at once
-   * @param res Data container of fetched repositories
-   * @param afterCursor String from which indicator to fetch the next 50 repositories
+   * Call GitHub GraphQL endpoint via API
    */
-  const getRepoData = async (res: Array<GitHubRepository> = [], afterCursor = null) => {
-    const startDate = DateTime.now().minus({ days: 7 }).toISODate();
-    const query = `query SearchMostStarsPast7Days($afterCursor: String) {
-      search(query: "stars:>20 size:>10 created:>${startDate}", type: REPOSITORY, first: 50, after: $afterCursor) {
-          repositoryCount
-          edges {
-              node {
-                  ...on Repository {
-                      name
-                      description
-                      stargazers {
-                          totalCount
-                      }
-                      url
-                      languages(first: 10) {
-                          nodes {
-                              name
-                          }
-                      }
-                  }
-              }
-          }
-          pageInfo {
-              endCursor
-              hasNextPage
-          }
-      }
-    }`
+  const getRepoData = async () => {
 
-    const response = await fetch('https://api.github.com/graphql', {
+    const response = await fetch('/api/github', {
       method: 'POST',
       body: JSON.stringify({
-        query,
-        variables: { afterCursor }
+        type: 'searchMostStarsPast7Days'
       }),
       headers: {
-        'Authorization': `Bearer ${props.token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       }
     });
     const responseObj = await response.json();
-
-    // Push fetched data into data array
-    res.push(...(responseObj.data.search as IGitHubSearchResult<IGitHubRepoStarSearchResult>).edges.map((edge) => {
-      const node = edge.node;
-      return {
-        // TODO: Favorites outside 7 days creation date are now disregarded, should be solved
-        favorite: favoriteRepos.includes(node.name),
-        name: node.name,
-        description: node.description,
-        url: node.url,
-        stargazers_count: node.stargazers.totalCount,
-        languages: node.languages.nodes.map((node) => node.name)
-      } as GitHubRepository
-    }))
-    return responseObj.data.search.pageInfo.hasNextPage ? getRepoData(res, responseObj.data.search.pageInfo.endCursor) : res;
+    const { data } = responseObj;
+    data.forEach((repo) => {
+      repo.favorite = favoriteRepos.includes(repo.name);
+    })
+    return data;
   }
 
   const [rowData, setRowData] = useState( null );

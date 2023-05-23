@@ -1,5 +1,6 @@
 import Head from "next/head";
 
+// TODO: Fix linting to accept types
 type HeadComponentPropsType = {
     title: string;
     metaData: string;
